@@ -1,0 +1,87 @@
+// Prisma schema for reviews/ratings and basic ecommerce entities
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  orders    Order[]
+  reviews   Review[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id              Int       @id @default(autoincrement())
+  title           String
+  description     String?
+  averageRating   Float     @default(0)
+  reviewCount     Int       @default(0)
+  reviews         Review[]
+  orderItems      OrderItem[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  user      User        @relation(fields: [userId], references: [id])
+  userId    String
+  status    String      // e.g., Pending, Delivered
+  items     OrderItem[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int
+  price     Float
+}
+
+model Review {
+  id                  String    @id @default(cuid())
+  product             Product   @relation(fields: [productId], references: [id])
+  productId           Int
+  user                User      @relation(fields: [userId], references: [id])
+  userId              String
+  rating              Int
+  title               String?
+  reviewText          String
+  images              String[]
+  status              String    @default("pending")
+  isVerifiedPurchase  Boolean   @default(false)
+  helpfulCount        Int       @default(0)
+  notHelpfulCount     Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  votes               ReviewHelpfulness[]
+
+  @@index([productId])
+  @@index([userId])
+}
+
+model ReviewHelpfulness {
+  id        String  @id @default(cuid())
+  review    Review  @relation(fields: [reviewId], references: [id])
+  reviewId  String
+  user      User    @relation(fields: [userId], references: [id])
+  userId    String
+  isHelpful Boolean
+
+  @@unique([reviewId, userId])
+}
+
+
